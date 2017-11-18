@@ -70,7 +70,7 @@ if (!require(cowplot)) {
 
 ```{r, data cleaning, echo=FALSE}
 #https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis
-dat=read.table(file="K:/IGP exp_in lab/ProgressReport_20171115/IGP_II_20170419_1.csv", sep=",", header=TRUE, fill=TRUE)
+dat=read.table(file="D:/Research/IGP_LabExp/Analysis/IGP_II_20170419_1.csv", sep=",", header=TRUE, fill=TRUE)
 dat[,2:ncol(dat)] = dat[,2:ncol(dat)]+0.01
 
 dat.l = dat %>%
@@ -118,7 +118,7 @@ dat.sum = dat.l %>%
 B_sum = dat.sum[which(grepl("B", as.character(dat.sum[,"trmt.all"]))==TRUE),]
 C_sum = dat.sum[which(grepl("C", as.character(dat.sum[,"trmt.all"]))==TRUE),]
 
-dat.mod = read.table(file="K:/IGP exp_in lab/ProgressReport_20171115/Type2.csv", sep=",", header=TRUE, fill=TRUE)
+dat.mod = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/Type2.csv", sep=",", header=TRUE, fill=TRUE)
 dat.mod = dat.mod %>%
   mutate(Res = (R1+R2)/(dat.mod[1,"R1"]+dat.mod[1,"R2"]),
          Cons = C/(dat.mod[1,"C"]),
@@ -130,7 +130,7 @@ dat.mod = dat.mod %>%
 From the model with just type I functional response, I hypothesized that the resource density at the equilibrium should first decease and then increase with the contact probability ($\alpha$; the proportion of IG prey that is available to the IG predator). Note that I re-caled the resource density at the equilibrium on the condition where contact probability ($\alpha$=0), so that it is comparable across model and experimental results. 
 
 ```{r}
-dat.mod_I = read.table(file="K:/IGP exp_in lab/ProgressReport_20171115/Type1.csv", sep=",", header=TRUE, fill=TRUE)
+dat.mod_I = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/Type1.csv", sep=",", header=TRUE, fill=TRUE)
 dat.mod_I = dat.mod_I %>%
   mutate(Res = (R1+R2)/(dat.mod_I[1,"R1"]+dat.mod_I[1,"R2"]),
          Cons = C/(dat.mod_I[1,"C"]),
@@ -258,7 +258,7 @@ In addition, I found that consumption of IG prey by IG predator should be descri
 
 ```{r, reading/cleaning bacteria data, echo=FALSE, include=FALSE}
 #D:/Research/IGP_LabExp/Analysis/IGP_II_20170419_bac.csv
-Bac_raw = read.table(file="K:/IGP exp_in lab/ProgressReport_20171115/IGP_II_20170419_bac2.csv",
+Bac_raw = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_bac2.csv",
                      fill=TRUE, header=TRUE, sep=",")
 
 Bac = Bac_raw %>%
@@ -386,7 +386,7 @@ ggplot() +
 From the literature and another independent experiment, I found that both IG predator and IG prey have type II functional response when consuming bacteria and IG prey. I therefore estimate the attack rate and handling time of the IG predator and extract the attack rate and handling time of IG prey from literature to build another more mechanistic model. 
 
 ```{r, Type2 functional response of IG predator, echo=FALSE}
-BC_Type2=read.table(file="K:/IGP exp_in lab/ProgressReport_20171115/BonC_Type2_20171112.csv", sep=",",header=T,fill=T)
+BC_Type2=read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/BonC_Type2_20171112.csv", sep=",",header=T,fill=T)
 
 BC_nls = BC_Type2 %>% 
   ddply(.(Trmt, rep), summarize,
@@ -571,7 +571,7 @@ tp_start = 2
 tp_end = length(unique(C_sum[,"hr"]))-2
 timepoint = unique(C_sum[,"hr"])[tp_start:tp_end]
 
-path=expression("K:/IGP exp_in lab/ProgressReport_20171115")
+path=expression("D:/Research/IGP_LabExp/Analysis/ProgressReport_20171115")
 
 NonParam_log = function(den){ # This function takes log-transformed data
   set.seed(1032)
