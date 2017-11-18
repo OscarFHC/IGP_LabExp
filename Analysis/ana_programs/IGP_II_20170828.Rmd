@@ -1,0 +1,564 @@
+---
+title: "In Lab experiment"
+author: "Oscar Feng-Hsun Chang"
+date: "2017 Aug"
+output: 
+  html_document:
+    code_folding: show
+    highlight: textmate
+    keep_md: yes
+    number_sections: false
+    theme: flatly
+    toc: yes
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+      toc_depth: 4
+---
+        
+```{r, include=FALSE}
+library(MASS)
+library(faraway)
+library(lme4)
+library(nlme)
+library(ggplot2)
+library(plyr)
+library(magrittr)
+library(reshape2)
+library(dunn.test)
+library(cowplot)
+```
+
+```{r, data cleaning, echo=FALSE}
+#https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis
+dat=read.table(file="D:/Research/IGP_LabExp/Analysis/IGP_II_20170419.csv", sep=",",header=T,fill=T)
+dat[,2:ncol(dat)] = dat[,2:ncol(dat)]+0.01
+
+dat.l = dat %>%
+  melt(id="hr", variable.name="trmt", value.name="den") %>%
+  mutate(trmt.all = 0)
+
+dat.l[which(grepl("B00", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="B00"
+dat.l[which(grepl("C00", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="C00"
+dat.l[which(grepl("B02", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="B02"
+dat.l[which(grepl("C02", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="C02"
+dat.l[which(grepl("B04", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="B04"
+dat.l[which(grepl("C04", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="C04"
+dat.l[which(grepl("B06", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="B06"
+dat.l[which(grepl("C06", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="C06"
+dat.l[which(grepl("B08", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="B08"
+dat.l[which(grepl("C08", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="C08"
+dat.l[which(grepl("B10", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="B10"
+dat.l[which(grepl("C10", as.character(dat.l[,"trmt"]))==TRUE),"trmt.all"]="C10"
+
+NonParam = function(den){ # This function is to produce non-parametric SE for log transformed data. The input should be raw numbers
+  set.seed(1032)
+  means = replicate(5000, mean(log(sample(den, size=length(den), replace=TRUE))))
+  sd(means)
+}
+
+dat.summary = dat.l %>%
+  ddply(c("trmt.all", "hr"), summarize,
+        rep = length(den),
+        avg = log(mean(den)),
+        sd = sd(log(den)),
+        se = sd/sqrt(rep),
+        se_permu = NonParam(den)
+        )
+B_sum = dat.summary[which(grepl("B", as.character(dat.summary[,"trmt.all"]))==TRUE),]
+C_sum = dat.summary[which(grepl("C", as.character(dat.summary[,"trmt.all"]))==TRUE),]
+```
+
+Based on the classic paper by Holling in 1959, predator-prey interaction can be modeled by the following functions (i.e. so called Type I or Type II functional response). Both functional responses contains a parameter that describes the proportion of prey that is available for the predator. 
+1. Type I functional response:  
+
+$$f(R) = {\alpha}TR $$, where ${\alpha}$ is the encounter probability, $T$ is the searching time, and $R$ is the prey density. Encounter probability (${\alpha}$) is the proportion of prey that is available for the predator.  
+
+2. Type II functional response:  
+
+$$f(R) = \frac{{\alpha}TR}{1+{\alpha}hR}$$, where ${\alpha}$ is again the encounter probability, $T$ is the searching time, and $h$ is the handling time. 
+
+In my lab experiment, I directly modified the ${\alpha}$ parameter because I used the screen mesh to modify the proportion of IG prey that is available to the IG predator. This lab experiment would thus be valid to verify my model predictions. 
+
+# Population dynamics visualization
+
+First visualize the population dynamics of the two protozoa species.  
+
+*Blepharisma*
+
+```{r, time series visualization for Blespharisma, echo=FALSE}
+ggplot(B_sum, aes(x=hr, y=avg, colour=trmt.all)) + 
+  geom_errorbar(aes(ymin=avg-se_permu, ymax=avg+se_permu), width=.1) +
+  geom_line(aes(group=trmt.all)) +
+  geom_point(size=4) + 
+  xlab("hr") + 
+  ylab("Log[density(ind./mL)]") + 
+  theme_bw() +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+        axis.text=element_text(size=16), axis.title=element_text(size=18,face="bold"),
+        legend.key=element_rect(color="white", fill="white"), 
+        legend.title=element_text(size=14),
+        legend.text=element_text(size=14)
+        )+
+  scale_colour_hue(l=45)
+```
+
+*Colpidium*
+
+```{r, time series visualization for Colpidium, echo=FALSE}
+ggplot(C_sum, aes(x=hr, y=avg, colour=trmt.all)) + 
+  geom_errorbar(aes(ymin=avg-se_permu, ymax=avg+se_permu), width=.1) +
+  geom_line(aes(group=trmt.all)) +
+  geom_point(size=4) + 
+  xlab("hr") + 
+  ylab("Log[density(ind./mL)]") + 
+  theme_bw() +
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+        axis.text=element_text(size=16), axis.title=element_text(size=18,face="bold"),
+        legend.key=element_rect(color="white", fill="white"), 
+        legend.title=element_text(size=14),
+        legend.text=element_text(size=14)
+  )+
+  scale_colour_hue(l=45)
+```
+
+Now I take the hour 368, 414, 468, 486, and 535 to calculate the mean and standard error of two protozoa density in the six treatments (0%, 20%, 40%, 60%, 80%, and 100% encounter probability). 
+
+# Model predictions
+
+From the model I derive three major predictions. 
+
+## 1. IG prey 
+
+### Model prediction
+
+Here I extract the IG prey density at the equilibrium from the model. According to the model that used type I functinoal response to model intra-guild predation, I would expect the IG prey density to monotonically decrease with encounter probability. 
+
+![IG prey density at equilibrium in the model](D:/Research/IGP_LabExp/Analysis/ProgressReport_1/IGprey_IGPrate_Mod.tiff)
+
+### Experimental results 
+
+Here I calculated the mean IG prey (*Colpidium*) density for all six treatments (0%, 20%, 40%, 60%, 80% and 100% encounter probability). Because I cannot be 100% sure what is steady state from the time series, I calculate the mean density of every five consecutive timepoints. I then moved this five-point time frame gradually forward from hour 34 to hour 535. Here is the series of plots
+
+```{r, producint series of plots of Colpidium density across 5 time points, echo=FALSE}
+tp_start = 2
+tp_end = length(unique(C_sum[,"hr"]))-2
+timepoint = unique(C_sum[,"hr"])[tp_start:tp_end]
+
+path=expression("D:/Research/IGP_LabExp/Analysis/progressReport_20170828")
+
+NonParam_log = function(den){ # This function takes log-transformed data
+  set.seed(1032)
+  means = replicate(5000, mean(sample(den, size=length(den), replace=TRUE)))
+  sd(means)
+}
+
+for (i in 1: tp_end){
+  if (i+4<=13){
+    C_stat = C_sum %>% 
+      subset(hr %in% timepoint[i:(i+4)]) %>%
+      subset(avg>log(0.01)) %>%
+      ddply(c("trmt.all"), summarize,
+        rep = length(avg),
+        avg_trmt = mean(avg),
+        sd_trmt = sd(avg),
+        se_trmt = sd_trmt/sqrt(rep),
+        se_permu = NonParam_log(avg)
+        ) %>%
+    ggplot(aes(x=trmt.all, y=avg_trmt)) +
+      geom_errorbar(aes(ymin=avg_trmt-se_permu, ymax=avg_trmt+se_permu), width=.1) + 
+      geom_point(size=4) + 
+      labs(x="treatment", 
+           y="Log[density(ind./mL)]", 
+           title=paste0("Average Density from hour ", timepoint[i], " to hour ",  timepoint[i+4]),
+           caption="error bars represent standard error of the mean") + 
+      ylim(-4, 6) + 
+      theme_bw() +
+      theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+            axis.text=element_text(size=14), axis.title=element_text(size=14,face="bold"),
+            legend.key=element_rect(color="white", fill="white"), 
+            legend.title=element_text(size=14),
+            legend.text=element_text(size=14)) 
+    ggsave(filename=paste(path, paste("CDen_tp_", i, "_", i+4, ".jpg", sep=""), sep="//"), 
+       plot=C_stat, width=35, height=24, units=c("cm"), dpi=600)
+  }else{}
+}
+```
+
+```{r}
+tp_start = 2
+tp_end = length(unique(C_sum[,"hr"]))-2
+timepoint = unique(C_sum[,"hr"])[tp_start:tp_end]
+
+NonParam_log = function(den){ # This function takes log-transformed data
+  set.seed(1032)
+  means = replicate(5000, mean(sample(den, size=length(den), replace=TRUE)))
+  sd(means)
+}
+
+for (i in 1: tp_end){
+  if (i+4<=13){
+    C_stat = C_sum %>% 
+      subset(hr %in% timepoint[i:(i+4)]) %>%
+      subset(avg>log(0.01)) %>%
+      ddply(c("trmt.all"), summarize,
+        rep = length(avg),
+        avg_trmt = mean(avg),
+        sd_trmt = sd(avg),
+        se_trmt = sd_trmt/sqrt(rep),
+        se_permu = NonParam_log(avg)
+        ) %>%
+    ggplot(aes(x=trmt.all, y=avg_trmt)) +
+      geom_errorbar(aes(ymin=avg_trmt-se_permu, ymax=avg_trmt+se_permu), width=.1) + 
+      geom_point(size=4) + 
+      labs(x="treatment", 
+           y="Log[density(ind./mL)]", 
+           title=paste0("Average Density from hour ", timepoint[i], " to hour ",  timepoint[i+4]),
+           caption="error bars represent standard error of the mean") + 
+      ylim(-4, 6) + 
+      theme_bw() +
+      theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+            axis.text=element_text(size=14), axis.title=element_text(size=14,face="bold"),
+            legend.key=element_rect(color="white", fill="white"), 
+            legend.title=element_text(size=14),
+            legend.text=element_text(size=14)) 
+
+    C_stat
+  }else{}
+}
+```
+
+```{r, producint series of plots of Blepharisma density across 5 time points, echo=FALSE}
+tp_start = 2
+tp_end = length(unique(B_sum[,"hr"]))-2
+timepoint = unique(B_sum[,"hr"])[tp_start:tp_end]
+
+NonParam_log = function(den){ # This function takes log-transformed data
+  set.seed(1032)
+  means = replicate(5000, mean(sample(den, size=length(den), replace=TRUE)))
+  sd(means)
+}
+
+path=expression("D:/Research/IGP_LabExp/Analysis/progressReport_20170828")
+
+for (i in 1: tp_end){
+  if (i+4<=13){
+    B_stat = B_sum %>% 
+      subset(hr %in% timepoint[i:(i+4)]) %>%
+      subset(avg>log(0.01)) %>%
+      ddply(c("trmt.all"), summarize,
+        rep = length(avg),
+        avg_trmt = mean(avg),
+        sd_trmt = sd(avg),
+        se_trmt = sd_trmt/sqrt(rep),
+        se_permu = NonParam_log(avg)
+        ) %>%
+    ggplot(aes(x=trmt.all, y=avg_trmt)) +
+      geom_errorbar(aes(ymin=avg_trmt-se_permu, ymax=avg_trmt+se_permu), width=.1) + 
+      geom_point(size=4) + 
+      labs(x="treatment", 
+           y="Log[density(ind./mL)]", 
+           title=paste0("Average Density from hour ", timepoint[i], " to hour ",  timepoint[i+4]),
+           caption="error bars represent standard error of the mean") + 
+      ylim(-4, 6) + 
+      theme_bw() +
+      theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+            axis.text=element_text(size=14), axis.title=element_text(size=14,face="bold"),
+            legend.key=element_rect(color="white", fill="white"), 
+            legend.title=element_text(size=14),
+            legend.text=element_text(size=14)) 
+    ggsave(filename=paste(path, paste("BDen_tp_", i, "_", i+4, ".jpg", sep=""), sep="//"), 
+       plot=B_stat, width=35, height=24, units=c("cm"), dpi=600)
+  }else{}
+}
+```
+
+```{r}
+tp_start = 2
+tp_end = length(unique(B_sum[,"hr"]))-2
+timepoint = unique(B_sum[,"hr"])[tp_start:tp_end]
+
+NonParam_log = function(den){ # This function takes log-transformed data
+  set.seed(1032)
+  means = replicate(5000, mean(sample(den, size=length(den), replace=TRUE)))
+  sd(means)
+}
+
+for (i in 1: tp_end){
+  if (i+4<=13){
+    B_stat = B_sum %>% 
+      subset(hr %in% timepoint[i:(i+4)]) %>%
+      subset(avg>log(0.01)) %>%
+      ddply(c("trmt.all"), summarize,
+        rep = length(avg),
+        avg_trmt = mean(avg),
+        sd_trmt = sd(avg),
+        se_trmt = sd_trmt/sqrt(rep),
+        se_permu = NonParam_log(avg)
+        ) %>%
+    ggplot(aes(x=trmt.all, y=avg_trmt)) +
+      geom_errorbar(aes(ymin=avg_trmt-qnorm(0.975)*se_permu, ymax=avg_trmt+qnorm(0.975)*se_permu), width=.1) + 
+      geom_point(size=4) + 
+      labs(x="treatment", 
+           y="Log[density(ind./mL)]", 
+           title=paste0("Average Density from hour ", timepoint[i], " to hour ",  timepoint[i+4]),
+           caption="error bars represent 95% confidence interval") + 
+      ylim(-4, 6) + 
+      theme_bw() +
+      theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+            axis.text=element_text(size=14), axis.title=element_text(size=14,face="bold"),
+            legend.key=element_rect(color="white", fill="white"), 
+            legend.title=element_text(size=14),
+            legend.text=element_text(size=14)) 
+    
+    B_stat
+  }else{}
+}
+```
+
+```{r, reading/cleaning bacteria data, echo=FALSE}
+#D:/Research/IGP_LabExp/Analysis/IGP_II_20170419_bac.csv
+Bac_raw = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_bac.csv",
+                     fill=TRUE, header=TRUE, sep=",")
+
+time = rep(c("T0", "Tend"), each=34)
+trmt = rep(c(rep(c("00", "02", "04"), each=5), rep(c("06"), each=4), rep(c("08", "10", "ctrl"), each=5)), 2)
+trmt2 = rep(c(rep(c("00_", "02_", "04_"), each=5), rep(c("06_"), each=4), rep(c("08_", "10_", "ctrl_"), each=5)), 2) 
+replicate = rep(c(rep(seq(1:5), 3), seq(1:4), rep(seq(1:5), 3)),2)
+
+Bac_raw[,"Sample.Name"] = rep(paste0(time, trmt), each=4)
+
+Bac = Bac_raw %>%
+  subset(Gate.Name %in% c("culture population", "R1")) %>%
+  subset(select=c("Sample.Name", "Gate.Name", "Concentration")) %>%
+  mutate(time = rep(time, each=2)) %>%
+  mutate(trmt = rep(paste0(trmt2, replicate), each=2))
+  colnames(Bac) = c("trmt_all", "pop", "den", "time", "trmt")
+Bac[,"den"] = as.numeric(as.character(Bac[,"den"]))
+
+Bac_pop_sum = Bac %>% 
+  subset(pop %in% c("culture population")) %>%
+  ddply(c("trmt_all"), "summarize",
+        rep_n = length(den),
+        avg = mean(log(den*10^3)),
+        sd = sd(log(den)),
+        se = sd/sqrt(rep_n),
+        se_permu = NonParam(den)
+        )
+
+Bac_pop_stat = Bac %>%
+  subset(pop %in% c("culture population")) %>%
+  dcast(trmt~time, value.var="den") %>%
+  mutate(dif=Tend-mean(T0), 
+         gp=c(rep(c("00", "02", "04"), each=5), rep(c("06"), each=4), rep(c("08", "10", "ctrl"), each=5))) %>%
+  mutate(rep=c(rep(seq(1:5), 3), seq(1:4), rep(seq(1:5), 3)))
+
+Bac_pop_sum %>%
+  subset (trmt_all %in% c("T000", "T002", "T004", "T006", "T008", "T010", "T0ctrl")) %>%
+  ggplot(aes(x=trmt_all, y=avg)) +
+    geom_errorbar(aes(ymin=avg-se_permu, ymax=avg+se_permu), width=.1) + 
+    geom_point(size=4) + 
+    xlab("treatment") + 
+    ylab(expression(paste("Log[Initial bacteria density (ind./", mu, "L)]"))) + 
+    theme_bw() +
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+          axis.text=element_text(size=16), axis.title=element_text(size=18,face="bold"),
+          legend.key=element_rect(color="white", fill="white"), 
+          legend.title=element_text(size=14),
+          legend.text=element_text(size=14)
+    ) 
+
+mod_Bac_T0 =  kruskal.test(T0~as.factor(gp), data=Bac_pop_stat)
+mod_Bac_T0
+dunn.test(Bac_pop_stat[,"T0"], 
+          Bac_pop_stat[,"gp"], method="bh")
+```
+
+```{r, echo=FALSE}
+ctrl = Bac_pop_stat %>% subset(gp=="ctrl")
+dif_ctrl = mean(ctrl[,"dif"])
+
+Bac_pop_stat %>%
+  subset(gp!="ctrl") %>%
+  ddply(c("gp"), summarize,
+    rep_trmt = length(dif),
+    avg_trmt = dif_ctrl-mean(dif),
+    sd_trmt = sd(dif_ctrl-dif),
+    se_trmt = sd_trmt/sqrt(rep_trmt),
+    se_permu = NonParam_log(dif)
+    ) %>%
+  ggplot(aes(x=gp, y=avg_trmt)) +
+    geom_errorbar(aes(ymin=avg_trmt-se_permu, ymax=avg_trmt+se_permu), width=.1) + 
+    geom_point(size=4) + 
+    xlab("treatment") + 
+    ylab(expression(paste("Bacteria consumption (ind./", mu, "L)"))) + 
+    theme_bw() +
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+          axis.text=element_text(size=16), axis.title=element_text(size=18,face="bold"),
+          legend.key=element_rect(color="white", fill="white"), 
+          legend.title=element_text(size=14),
+          legend.text=element_text(size=14)
+    ) 
+  
+
+Bac_R1_sum = Bac %>% 
+  subset(pop %in% c("R1")) %>%
+  ddply(c("trmt"), summarize,
+        rep_n = length(den),
+        mean = log(mean(den)),
+        sd = sd(log(den)),
+        se = sd/sqrt(rep_n)
+        )
+```
+
+
+
+##############
+
+
+
+
+# Treatment check
+
+In terms of IG predator density, I would expect it to be similar across treatments. From the pilot experiment (see below), I've observed that the density of IG predator (*Blepharisma*) is not affected by the occurrence of intra-guild predation. 
+
+![Population dynamics from pilot experiment](D:/Manuscript/IGP_div effects/proposals/full proposal_dissertation/figs/IG prey and Pred_TS.jpg)
+
+
+### Statistical check
+
+```{r, echo=FALSE}
+mod_B =  kruskal.test(avg~as.factor(trmt.all), data=B_stat)
+mod_B
+dunn.test(B_stat[,"avg"], 
+          B_stat[,"trmt.all"], method="bh")
+```
+
+The density of 20% encounter probability treatment has significantly higher density than the other treatments (the p-value of Kruskal-Wallis test is `r mod_B$p.value`) and the pair-wise comparison (Dunn's test) also show significant difference between 20% treatment versus other treatments. 
+
+## Mean *Colpidium* density across treatments.
+
+However, for the IG prey, I would expect its density to decrease with the increase of intra-guild predation rate, which, in theory, should be proportional to the encounter probability between IG prey and IG predator.
+
+```{r, echo=FALSE}
+C_stat = C_sum %>%
+  subset(hr>350 & hr<550)
+
+C_stat %>%
+  ddply(c("trmt.all"), summarize,
+        rep = length(avg),
+        avg_trmt = mean(avg),
+        sd_trmt = sd(avg),
+        se_trmt = sd_trmt/sqrt(rep)
+        ) %>%
+  ggplot(aes(x=trmt.all, y=avg_trmt)) +
+    geom_errorbar(aes(ymin=avg_trmt-qnorm(0.975)*se_trmt, ymax=avg_trmt+qnorm(0.975)*se_trmt), width=.1) + 
+    geom_point(size=4) + 
+    xlab("treatment") + 
+    ylab("Log[density(ind./mL)]") + 
+    theme_bw() +
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+          axis.text=element_text(size=14), axis.title=element_text(size=14,face="bold"),
+          legend.key=element_rect(color="white", fill="white"), 
+          legend.title=element_text(size=14),
+          legend.text=element_text(size=14)
+    ) 
+```
+
+From the plot, all treatments has lower density comparing to the 0% treatment, which is the treatment where two protozoa species engage in only competition. This suggests that *Colpidium* density would be lower as long as intra-guild predation occurs. 
+
+### Statistical check
+
+```{r, echo=FALSE}
+mod_C =  kruskal.test(avg~as.factor(trmt.all), data=C_stat)
+mod_C
+dunn.test(C_stat[,"avg"], 
+          C_stat[,"trmt.all"], method="bh")
+```
+
+For the *Colpidium*, We see that 0% encounter probability treatment tend to have higher density than the other treatments, although the multiple comparison results show that 40% and 60% encounter probability treatment are the only two treatments that has significantly lower density. 
+
+# Testing hypothesis
+
+According to the mathematical model, I hypothesize that bacteria consumption would first increase and than decrease with intra-guild predation rate (see below). Again, I used the encounter probability between the two protozoa species to represent the intra-guild predation rate. 
+
+![Theoretical model prediction](D:/Research/IGP_LabExp/Analysis/ProgressReport_1/TotZ_IGPrate_Mod.tiff)
+
+## Check initial bacteria density.  
+
+First I check if the initial bacteria density across treatments are the same. 
+
+
+
+The initial bacteria density are not significantly different from each other.  
+
+## Testing hypothesis
+
+Now I check the bacteria consumption in different treatment. Bacteria consumption is calculated by the difference between density at the stable state ($T_{end}$) subtracting the initial bacteria density ($T_0$).
+
+```{r, echo=FALSE}
+ctrl = Bac_pop_stat %>% subset(gp=="ctrl")
+dif_ctrl = mean(ctrl[,"dif"])
+
+Bac_pop_stat %>%
+  subset(gp!="ctrl") %>%
+  ddply(c("gp"), summarize,
+    rep_trmt = length(dif),
+    avg_trmt = dif_ctrl-mean(dif),
+    sd_trmt = sd(dif_ctrl-dif),
+    se_trmt = sd_trmt/sqrt(rep_trmt),
+    se_permu = NonParam(dif)
+    ) %>%
+  ggplot(aes(x=gp, y=avg_trmt)) +
+    geom_errorbar(aes(ymin=avg_trmt-se_trmt, ymax=avg_trmt+se_trmt), width=.1) + 
+    geom_point(size=4) + 
+    xlab("treatment") + 
+    ylab(expression(paste("Bacteria consumption (ind./", mu, "L)"))) + 
+    theme_bw() +
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), 
+          axis.text=element_text(size=16), axis.title=element_text(size=18,face="bold"),
+          legend.key=element_rect(color="white", fill="white"), 
+          legend.title=element_text(size=14),
+          legend.text=element_text(size=14)
+    ) 
+  
+
+Bac_R1_sum = Bac %>% 
+  subset(pop %in% c("R1")) %>%
+  ddply(c("trmt"), summarize,
+        rep_n = length(den),
+        mean = log(mean(den)),
+        sd = sd(log(den)),
+        se = sd/sqrt(rep_n)
+        )
+```
+
+```{r}
+mod_bac = kruskal.test(dif~as.factor(gp), data=Bac_pop_stat)
+mod_bac
+
+summary(mod_bac)
+dunn.test(Bac_pop_stat[,"dif"], 
+          Bac_pop_stat[,"gp"], method="bh")
+```
+
+```{r}
+Bac_pop_stat[,"gp"] = relevel(as.factor(Bac_pop_stat[,"gp"]), ref="ctrl")
+mod_bac1 = lmer(dif~as.factor(gp)+(1|rep), data=Bac_pop_stat, REML=FALSE)
+coefs = data.frame(coef(summary(mod_bac1)))
+# use normal distribution to approximate p-value
+coefs[,"p.z"] = 2 * (1 - pnorm(abs(coefs$t.value)))
+coefs
+```
+
+
