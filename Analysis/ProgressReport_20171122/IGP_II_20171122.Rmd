@@ -70,8 +70,7 @@ if (!require(cowplot)) {
 ```
 
 ```{r, data cleaning, echo=FALSE}
-#https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_1.csv
-dat=read.table(file="D:/Research/IGP_LabExp/Analysis/IGP_II_20170419_1.csv", sep=",", header=TRUE, fill=TRUE)
+dat=read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_1.csv", sep=",", header=TRUE, fill=TRUE)
 dat[,2:ncol(dat)] = dat[,2:ncol(dat)]+0.01
 
 dat.l = dat %>%
