@@ -70,7 +70,7 @@ if (!require(cowplot)) {
 ```
 
 ```{r, data cleaning, echo=FALSE}
-dat=read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_1.csv", sep=",", header=TRUE, fill=TRUE)
+dat=read.table(file="D:/Research/IGP_LabExp/Analysis/IGP_II_20170419_1.csv", sep=",", header=TRUE, fill=TRUE)
 dat[,2:ncol(dat)] = dat[,2:ncol(dat)]+0.01
 
 dat.l = dat %>%
@@ -127,7 +127,7 @@ dat.mod = dat.mod %>%
 
 # Hypothesis
 
-From the model with just type I functional response, I hypothesized that the resource density at the equilibrium should first decease and then increase with the contact probability ($\alpha$; the proportion of IG prey that is available to the IG predator). Note that I re-caled the resource density at the equilibrium on the condition where contact probability ($\alpha$=0), so that it is comparable across model and experimental results. 
+From the model with just type I functional response, I hypothesized that the resource density at the equilibrium should first decease and then increase with the contact probability ($\alpha$; the proportion of IG prey that is available to the IG predator). Note that I re-scaled the resource density at the equilibrium on the condition where contact probability ($\alpha$=0), so that it is comparable across model and experimental results. 
 
 ```{r, echo=FALSE}
 dat.mod_I = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/Type1.csv", sep=",", header=TRUE, fill=TRUE)
@@ -560,11 +560,13 @@ R2_II_bac = 1-(SSR_II_bac/SST_bac)
 
 For the resources (bacteria), the model with type I functional response explains 0% (R^2 is `r round(R2_I_bac, 4)`) of the empirical data.
 
-The empirical data only qualitatively confirm the IG prey and resource density at the equilibrium and the R^2 is fairly low. The IG predator density at the equilibrium can not be described by the model with just type I functino al response. 
+The empirical data only qualitatively confirm the IG prey and resource density at the equilibrium and the R^2 is fairly low. The IG predator density at the equilibrium can not be described by the model with just type I functional  response. 
 
 From the literature[@Laybourn1975; @Fenchel1980], I found that both IG predator and IG prey have type II functional response when consuming bacteria. However, attack rate and handling time of IG predator are not specifically estimated. I therefore extracted the attack rate and handling time from [@Laybourn1975] for IG prey and used similar value for IG predator to build another more mechanistic model. 
 
 In addition, I did another independent experiment to estimate the attack rate and handling time for IG predator when consuming IG prey. 
+
+The updated model becomes
 
 ```{r, Type2 functional response of IG predator, echo=FALSE}
 BC_Type2=read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/BonC_Type2_20171112.csv", sep=",",header=T,fill=T)
@@ -583,7 +585,7 @@ BC_nls %>%
     geom_point(aes(y=Cons), size=3) + 
     geom_line(aes(y=predict(Type2_mod)), linetype=2)+
       labs(x="IG prey density per IG predator (ind./ml)", 
-           y="Prey Consumption (ind./mL)")+ 
+           y=expression("Number of IG prey consumed (ind." %.% mL^-1 %.% day^-1))+ 
     theme_bw() +
     theme(panel.border = element_blank(), 
           panel.grid.major = element_blank(), 
@@ -600,7 +602,7 @@ BC_nls %>%
 #summary(Type2_mod)
 ```
 
-The attack rate and the handing time for IG predator when consuming IG prey are estimated to be `r round(summary(Type2_mod)$coefficients[1,1], 4)` and `r round(summary(Type2_mod)$coefficients[2,1], 4)` respectively. 
+The attack rate and the handing time for IG predator when consuming IG prey are estimated to be `r round(summary(Type2_mod)$coefficients[1,1], 4)` and `r round(summary(Type2_mod)$coefficients[2,1], 4)` respectively. This means the maximum consumption per day should be `r round(1/summary(Type2_mod)$coefficients[2,1], 4)` (IG prey/IG predator) and the half saturation density of IG prey is `r round(1/(summary(Type2_mod)$coefficients[2,1]*summary(Type2_mod)$coefficients[1,1]), 4)`. 
 
 # Confronting the updated model with empirical data
 
@@ -770,4 +772,8 @@ ggplot() +
 ```
 
 For the resources (bacteria), the model with type II functional response explains `r round(R2_II_bac, 4)*100`% of the empirical data.
+
+# Explanation
+
+When contact probability is low ($\alpha$= 20%), only small proportion of IG prey is being consumed by IG predator. The main interaction between IG prey and IG predator is still competition, so bacteria consumption is not different from the treatment where IGP is not allowed to occur ($\alpha$= 0%). When contact probability gradually increases to 40-60%, the IG predator reached higher density but the IG prey is not being completely suppressed as the IG predator has not yet satiated by IG prey (the IG prey to IG predator ratio is `r round(((mean(C_sum_00[,"avg"])*C_plot[3, "avg_trmt"])*0.4)/(mean(B_sum_00[,"avg"])*B_plot[3, "avg_trmt"]), 4)` to `r round(((mean(C_sum_00[,"avg"])*C_plot[4, "avg_trmt"])*0.6)/(mean(B_sum_00[,"avg"])*B_plot[4, "avg_trmt"]), 4)`). With high IG predator density and intermediate IG prey density, bacteria density is being suppressed to lowest degree. When contact probability increase further higher to over 80%, IG predator is satiated by the IG prey (the IG prey to IG predator ratio is over `r round(((mean(C_sum_00[,"avg"])*C_plot[5, "avg_trmt"])*0.8)/(mean(B_sum_00[,"avg"])*B_plot[5, "avg_trmt"]), 4)`). The IG prey density therefore does not decrease further. The reduction of IG predator could be due to competition incurred by the IG prey. The lowest level of IG prey density and satiated IG predator result in highest resource density at the equilibrium. 
 
