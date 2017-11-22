@@ -341,7 +341,7 @@ R2_I_pred = 1-(SSR_I_pred/SST_pred)
 R2_II_pred = 1-(SSR_II_pred/SST_pred)
 ```
 
-For the IG predator, the model with type I functional response explains 0% (R^2 is `r round(R2_I_pred, 4)`) of the empirical data. 
+For the IG predator, the model with type I functional response explains 0% ($R^2$ is `r round(R2_I_pred, 4)`) of the empirical data. 
 ## IG prey (*Colpidium*)
 
 ```{r, echo=FALSE}
@@ -558,15 +558,13 @@ R2_I_bac = 1-(SSR_I_bac/SST_bac)
 R2_II_bac = 1-(SSR_II_bac/SST_bac)
 ```
 
-For the resources (bacteria), the model with type I functional response explains 0% (R^2 is `r round(R2_I_bac, 4)`) of the empirical data.
+For the resources (bacteria), the model with type I functional response explains 0% ($R^2$ is `r round(R2_I_bac, 4)`) of the empirical data.
 
 The empirical data only qualitatively confirm the IG prey and resource density at the equilibrium and the R^2 is fairly low. The IG predator density at the equilibrium can not be described by the model with just type I functional  response. 
 
 From the literature[@Laybourn1975; @Fenchel1980], I found that both IG predator and IG prey have type II functional response when consuming bacteria. However, attack rate and handling time of IG predator are not specifically estimated. I therefore extracted the attack rate and handling time from [@Laybourn1975] for IG prey and used similar value for IG predator to build another more mechanistic model. 
 
 In addition, I did another independent experiment to estimate the attack rate and handling time for IG predator when consuming IG prey. 
-
-The updated model becomes
 
 ```{r, Type2 functional response of IG predator, echo=FALSE}
 BC_Type2=read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/BonC_Type2_20171112.csv", sep=",",header=T,fill=T)
