@@ -102,7 +102,6 @@ NonParam = function(den){ # This function does not log-transform data before doi
   sd(means)
 }
 
-
 dat.sum = dat.l %>%
   ddply(c("trmt.all", "hr"), summarize,
         rep = length(den),

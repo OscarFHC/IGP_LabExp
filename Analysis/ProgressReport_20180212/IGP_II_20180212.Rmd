@@ -1,0 +1,480 @@
+---
+title: "Searching best parameter for the in-lab exp"
+author: "OSCAR" 
+date: "2018 Feb. 12"
+output: 
+  html_document:
+    code_folding: show
+    highlight: textmate
+    keep_md: no
+    number_sections: true
+    theme: flatly
+    toc: yes
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+      toc_depth: 4
+---
+
+```{r, include=FALSE, warning=FALSE, messssage=FALSE}
+if (!require(ggplot2)) {
+  install.packages("ggplot2")
+  library(ggplot2)
+}else{library(ggplot2)}
+
+if (!require(cowplot)) {
+  install.packages("cowplot")
+  library(cowplot)
+}else{library(cowplot)}
+
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+  library(tidyverse)
+}else{library(tidyverse)}
+
+if (!require(viridis)) {
+  install.packages("viridis", dependencies=TRUE, repos='https://ftp.ussg.iu.edu/CRAN/')
+  library(viridis)
+}else{library(viridis)}
+```
+
+```{r, preping/cleaning data, echo=FALSE}
+dat <- read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_1.csv", sep = ",", header = TRUE, fill = TRUE)
+dat[,2:ncol(dat)] <- dat[, 2:ncol(dat)] + 0.01
+
+dat_l <- dat %>% 
+  gather(key = trmt, value = den, -hr) %>% 
+  mutate(trmt_all = 0)
+
+dat_l[which(grepl("B00", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="B00"
+dat_l[which(grepl("C00", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="C00"
+dat_l[which(grepl("B02", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="B02"
+dat_l[which(grepl("C02", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="C02"
+dat_l[which(grepl("B04", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="B04"
+dat_l[which(grepl("C04", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="C04"
+dat_l[which(grepl("B06", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="B06"
+dat_l[which(grepl("C06", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="C06"
+dat_l[which(grepl("B08", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="B08"
+dat_l[which(grepl("C08", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="C08"
+dat_l[which(grepl("B10", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="B10"
+dat_l[which(grepl("C10", as.character(dat_l[,"trmt"]))==TRUE), "trmt_all"]="C10"
+
+NonParam_log <- function(den){ # This function log transforms the data when calculatingnon-parametric SE
+  set.seed(1032)
+  means = replicate(5000, mean(log(sample(den, size=length(den), replace=TRUE))))
+  sd(means)
+}
+
+NonParam <- function(den){ # This function does not log-transform data before doing permutation
+  set.seed(1032)
+  means = replicate(5000, mean(sample(den, size=length(den), replace=TRUE)))
+  sd(means)
+}
+
+dat_sum <- dat_l %>% 
+  group_by(trmt_all, hr) %>% 
+  summarize(
+    rep = length(den),
+    avg = mean(den),
+    avg_log = mean(log(den)),
+    sd = sd(den),
+    sd_log = sd(log(den)),
+    se = sd/sqrt(rep),
+    se_log = sd_log/sqrt(rep),
+    se_permu = NonParam(den),
+    se_permu_log = NonParam_log(den)
+  ) %>%
+  ungroup()
+
+tp_start <- 2
+tp_end <- length(unique(dat_sum[["hr"]]))-2
+timepoint<- unique(dat_sum[["hr"]])[tp_start:tp_end]
+
+i <- 8
+
+B_sum_00 <- dat_sum %>% 
+  filter(hr %in% timepoint[i:(i+4)]) %>%
+  filter(trmt_all == "B00")
+
+C_sum_00 <- dat_sum %>% 
+  filter(hr %in% timepoint[i:(i+4)]) %>%
+  filter(trmt_all == "C00")
+
+B_cal <- dat_sum %>%
+  filter(hr %in% timepoint[i:(i+4)] & substr(trmt_all, 1, 1) == "B") %>%
+  group_by(trmt_all) %>%
+  summarize(
+    rep = length(avg),
+    avg_trmt = mean(avg/mean(B_sum_00[["avg"]])),
+    sd_trmt = sd(avg/mean(B_sum_00[["avg"]])),
+    se_trmt = sd_trmt/sqrt(rep),
+    se_permu = NonParam(avg/mean(B_sum_00[["avg"]]))
+  ) %>%
+  mutate(alpha = seq(0, 1, by = 0.2))
+
+C_cal <- dat_sum %>%
+  filter(hr %in% timepoint[i:(i+4)] & substr(trmt_all, 1, 1) == "C") %>%
+  group_by(trmt_all) %>%
+  summarize(
+    rep = length(avg),
+    avg_trmt = mean(avg/mean(C_sum_00[["avg"]])),
+    sd_trmt = sd(avg/mean(C_sum_00[["avg"]])),
+    se_trmt = sd_trmt/sqrt(rep),
+    se_permu = NonParam(avg/mean(C_sum_00[["avg"]]))
+  ) %>%
+  mutate(alpha = seq(0, 1, by = 0.2))
+
+dat_cal <- rbind(B_cal, C_cal)
+```
+
+```{r, loading Bacteria data, echo=FALSE}
+Bac_raw = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_bac2.csv",
+                     fill=TRUE, header=TRUE, sep=",")
+
+Bac = Bac_raw %>%
+  mutate(time = rep(rep(c("T0", "Tend"), each=nrow(Bac_raw)/8), each=4)) %>%
+  subset(Gate.Name %in% c("culture population")) %>%
+  mutate(trmt = rep(paste0(
+                       c(rep(c("00_", "02_", "04_", "06_"), each=3), 
+                         rep(("08_"), each=4),
+                         rep(c("10_", "ctrl_"), each=5)),
+                       c(rep(seq(from=1, to=3), 4),
+                         rep(seq(from=1, to=4), 1),
+                         rep(seq(from=1, to=5), 2))
+                      ), 2)
+        ) %>%
+  mutate(trmt_all = rep(
+                      c(rep(c("Bac00", "Bac02", "Bac04", "Bac06"), each=3), 
+                      rep(c("Bac08"), each=4),
+                      rep(c("Bac10", "Bacctrl"), each=5)),2)
+         ) %>%
+  subset(select=c("time", "trmt_all", "trmt", "Gate.Name", "Concentration")) 
+  colnames(Bac) = c("time", "trmt_all", "trmt", "pop", "den")
+
+Cons_ctrl = mean(Bac[which(Bac[,"trmt_all"] == "Bacctrl" & Bac[,"time"] == "Tend"), "den"])
+Cons_00 = mean(Bac[which(Bac[,"trmt_all"] == "Bac00" & Bac[,"time"] == "Tend"), "den"])
+Eqm_00 = mean(Bac[which(Bac[,"trmt_all"] == "Bac00" & Bac[,"time"] == "Tend"), "den"])
+
+Bac_pop <- Bac %>%
+  subset(select = -pop) %>%
+  spread(key = time, value = den) %>%
+  mutate(Consumption = Cons_ctrl - Tend) %>%
+  mutate(Change_Cons = Consumption / Cons_00) %>%
+  mutate(Change_Eqm = Tend/Eqm_00)
+
+Bac_cal <- Bac_pop %>%
+  group_by(trmt_all) %>%
+  summarize(
+    rep = length(Change_Eqm),
+    avg_trmt = mean(Change_Eqm),
+    sd_trmt = sd(Change_Eqm),
+    se_trmt = sd_trmt/sqrt(rep),
+    se_permu = NonParam(Change_Eqm)
+  ) %>%
+  mutate(alpha = c(seq(0, 1, by = 0.2), 0))
+
+dat_cal <- rbind(dat_cal, Bac_cal)
+
+```
+
+
+```{r}
+mod.lst <- expand.grid(e2 = seq(0, 0.5, 0.01), partition = seq(0, 0.15, 0.01))
+
+for (i in 1:nrow(mod.lst)){
+  tempdat <- read.table(file = paste0("D:/Research/IGP_LabExp/Analysis/Type2ModResults/Type2_e2_", mod.lst[i, "e2"]*10, "_p_", mod.lst[i,"partition"]*100, "..csv"), sep=",", header=FALSE)
+  colnames(tempdat) <- c("alpha", "P1", "P2", "C", "B")
+
+  PredSSR <- cbind(B_cal, subset(tempdat, alpha %in% c(0, 0.2, 0.4, 0.6, 0.8, 1.0)))
+  PredSSR[,"B"] <- PredSSR[,"B"]/PredSSR[1,"B"]
+  mod.lst[i, "RSS_Pred"] <- sum((PredSSR[,"avg_trmt"] - PredSSR[,"B"])^2)/
+                            sum((PredSSR[,"avg_trmt"] - mean(PredSSR[,"avg_trmt"]))^2)
+  
+  PreySSR <- cbind(C_cal, subset(tempdat, alpha %in% c(0, 0.2, 0.4, 0.6, 0.8, 1.0)))
+  PreySSR[,"C"] <- PreySSR[,"C"]/PreySSR[1,"C"]
+  mod.lst[i, "RSS_Prey"] <- sum((PreySSR[,"avg_trmt"] - PreySSR[,"C"])^2)/
+                            sum((PreySSR[,"avg_trmt"] - mean(PreySSR[,"avg_trmt"]))^2)
+
+  ResSSR <- cbind(Bac_cal[-nrow(Bac_cal),], subset(tempdat, alpha %in% c(0, 0.2, 0.4, 0.6, 0.8, 1.0)))
+  ResSSR[,"Bac"] <- (ResSSR[,"P1"] + ResSSR[,"P2"]) / (ResSSR[1,"P1"] + ResSSR[1,"P2"])
+  mod.lst[i, "RSS_Bac"] <- sum((ResSSR[,"avg_trmt"] - ResSSR[,"Bac"])^2)/
+                           sum((ResSSR[,"avg_trmt"] - mean(ResSSR[,"avg_trmt"]))^2)
+}
+
+
+mod.lst <- mod.lst %>%
+  mutate(RSS_tot = RSS_Bac + RSS_Prey + RSS_Pred) 
+
+mod.lst %>%
+  subset(RSS_Pred<1 & RSS_Prey<1 & RSS_Bac<1) %>%
+  ggplot(aes(x = e2, y = 1-partition, fill = RSS_tot)) +
+  geom_tile(color = "white", size = 0.1) +
+  scale_fill_viridis() + 
+  #coord_equal() + 
+  labs(x = "Assimilation efficiency of IG prey", y = "Degree of resource partitioning") +
+  theme(legend.title = element_text(size = 10),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(size=16),
+        axis.title=element_text(size=14,face="bold"))+
+        #axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(fill = "Normalized total \nresidual sum of squared")
+
+```
+
+```{r}
+subset(mod.lst, RSS_tot == min(mod.lst[,"RSS_tot"]))
+```
+
+# Hypothesis
+
+According to the model with only type I functional response, I predict that total animal density at the equilibrium ($Z_{tot}$) first increase and then decrease with intra-guild predation ($\alpha$; the proportion of IG prey that is available to the IG predator). Therefore I hypothesize that _resoure density_ at the equilibrium would first decrease and then increase with contact probability ($\alpha$=0). Note that I normalized the resource density at the equilibrium on the condition where contact probability ($\alpha$=0), so that it is comparable across model and experimental results. 
+
+```{r, hypothsis from Type I model, echo=FALSE}
+tempDen_tot_H = read.table(file = "D:/Research/IGP_LabExp/Analysis/ProgressReport_20180212/m1_1_m2_150._C1_1_C2_70._TotZ.csv", header=F, fill=T, sep=",")
+
+tempEigen = read.table(file = "D:/Research/IGP_LabExp/Analysis/ProgressReport_20180212/m1_1_m2_1.5_C1_1_C2_0.7_Eigenval1.csv", header=F, fill=T, sep=",")
+
+ModResults_Ztot_Hump = as.data.frame(matrix(0, nrow(tempDen_tot_H) * ncol(tempDen_tot_H), 4))
+ModResults_Ztot_Hump[,1] = rep(seq(0, 0.495, 0.005), nrow(tempDen_tot_H))
+ModResults_Ztot_Hump[,2] = rep(seq(0, 1.0, 0.005), each = ncol(tempDen_tot_H))
+for (i in 1:nrow(tempDen_tot_H)){
+  start = (i-1)*ncol(tempDen_tot_H)+1
+  end = i*ncol(tempDen_tot_H)
+  ModResults_Ztot_Hump[start:end,3] = as.numeric(tempDen_tot_H[i,])
+  ModResults_Ztot_Hump[start:end,4] = as.numeric(tempEigen[i,])
+}
+colnames(ModResults_Ztot_Hump) = c("ND", "IGP", "Z_tot", "LeadingEigenVal")
+
+ModResults_Ztot_Hump <- ModResults_Ztot_Hump %>%
+  group_by(ND) %>%
+  mutate(Z_totp = Z_tot/Z_tot[1])
+
+### Reading files for an example showing hump-shaped effects of IGP on total animal density #####
+### Creating a figure of hump-shpaped effects of IGP on total animal density #####
+Ztot_Hump = 
+  ModResults_Ztot_Hump %>% 
+  subset(ND %in% c(0, 0.125, 0.25, 0.375)) %>%
+  subset(LeadingEigenVal<0) %>%
+  arrange(ND) %>%
+  ggplot(aes(x = IGP, y = 2 - Z_totp, color = factor(ND))) +
+    geom_line(size=1.5) +
+    scale_color_viridis(discrete = TRUE,
+                        labels=c("100%", "75%", "50%", "25%"),
+                        guide=guide_legend(byrow=TRUE, title="% Resource \n Partitioning")
+                        )+
+    geom_hline(yintercept=1, linetype="solid", size=0.5)+
+    lims(x = c(0, 1)) + 
+    labs(x = expression(paste("Contact probability (", alpha, ")")),
+         y = expression(paste("Resource density at the equilibrium \n(ratio to 0% contact probability)"))
+         ) +
+    theme_bw() +
+    theme(panel.border=element_blank(), 
+          panel.grid.major=element_blank(), 
+          panel.grid.minor=element_blank(), 
+          plot.margin=unit(c(0, 0, 0, 0), "cm"),
+          legend.position = c(0.95, 0.5),
+          legend.justification = c("right", "top"),
+          legend.margin=margin(0, 0, 0, 0, "cm"),
+          legend.key=element_rect(color="white", fill="white"), 
+          legend.title=element_text(size=13),
+          legend.text=element_text(size=13),
+          axis.line = element_line(colour = "black"), 
+          axis.text=element_text(size=14), 
+          axis.title.x=element_text(size=14, face="bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+          axis.title.y=element_text(size=14, face="bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
+          )
+Ztot_Hump
+```
+
+To test this hypothesis, I designed an experiment that manipulates the contact probability by installing a $10 \mu m$screen mesh that is permeable to IG prey but not IG predator. With the screen mesh, I manipulated the contact probability of the IG prey by varying the proportion of IG prey that is available to IG predator. 
+
+# Experimental Results
+
+Before confronting the data with model results, I first visualize the population dynamics of IG prey and predator. 
+
+## Population dynamics visualization
+
+First I used the population density of IG predator and IG prey to identify if the system reached the steady state. 
+
+IG predator *Blepharisma*
+
+```{r, pop dynamics for IG predator, echo=FALSE}
+dat_sum %>%
+  subset(substr(trmt_all, 1, 1) == "B") %>% 
+  ggplot(aes(x = hr, y = avg_log, colour = trmt_all)) + 
+  geom_errorbar(aes(ymin = avg_log - se_permu_log, ymax = avg_log + se_permu_log), width = 0.1) +
+  geom_line() +
+  geom_point(size = 4) +
+  scale_color_viridis(discrete = TRUE,
+                      labels = c("0%", "20%", "40%", "60%", "80%", "100%"),
+                      guide = guide_legend(byrow=TRUE, title = expression(paste("Contact \nprobability (", alpha, ")")))
+                      ) + 
+  labs(x = "Hours",
+       y = "Log[density(ind./mL)]",
+       title = expression("Average density of IG predator ("* italic("Blespharisma")* ") across time"),
+       caption = "error bars represent standard error of the mean") + 
+  theme_bw() +
+  theme(panel.border=element_blank(), 
+        panel.grid.major=element_blank(), 
+        panel.grid.minor=element_blank(), 
+        plot.margin=unit(c(0, 0, 0, 0), "cm"),
+        #legend.position = c(0.95, 0.5),
+        legend.justification = c("right", "top"),
+        legend.margin=margin(0, 0, 0, 0, "cm"),
+        legend.key=element_rect(color="white", fill="white"), 
+        legend.title=element_text(size=13),
+        legend.text=element_text(size=13),
+        axis.line = element_line(colour = "black"), 
+        axis.text=element_text(size=14), 
+        axis.title.x=element_text(size=14, face="bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+        axis.title.y=element_text(size=14, face="bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
+        )
+```
+
+IG prey *Colpidium*
+
+```{r, pop dynamics for IG prey, echo=FALSE}
+dat_sum %>%
+  subset(substr(trmt_all, 1, 1) == "C") %>% 
+  ggplot(aes(x = hr, y = avg_log, colour = trmt_all)) + 
+  geom_errorbar(aes(ymin = avg_log - se_permu_log, ymax = avg_log + se_permu_log), width = 0.1) +
+  geom_line(size = 1.5) +
+  geom_point(size = 4) +
+  scale_color_viridis(discrete = TRUE,
+                      labels = c("0%", "20%", "40%", "60%", "80%", "100%"),
+                      guide = guide_legend(byrow=TRUE, title = expression(paste("Contact \nprobability (", alpha, ")")))
+                      ) + 
+  labs(x = "Hours",
+       y = "Log[density(ind./mL)]",
+       title = expression("Average density of IG predator ("* italic("Colpidium")* ") across time"),
+       caption = "error bars represent standard error of the mean") + 
+  theme_bw() +
+  theme(panel.border=element_blank(), 
+        panel.grid.major=element_blank(), 
+        panel.grid.minor=element_blank(), 
+        plot.margin=unit(c(0, 0, 0, 0), "cm"),
+        #legend.position = c(0.95, 0.5),
+        legend.justification = c("right", "top"),
+        legend.margin=margin(0, 0, 0, 0, "cm"),
+        legend.key=element_rect(color="white", fill="white"), 
+        legend.title=element_text(size=13),
+        legend.text=element_text(size=13),
+        axis.line = element_line(colour = "black"), 
+        axis.text=element_text(size=14), 
+        axis.title.x=element_text(size=14, face="bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+        axis.title.y=element_text(size=14, face="bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
+        )
+```
+
+For both *Blespharisma* and *Colpidium*, I calculated the mean density for all six treatments (0%, 20%, 40%, 60%, 80% and 100% encounter probability) at the steady state. Because I cannot be 100% sure what are the most representative time points for the steady state, I calculate the mean density of every five consecutive time points. I then moved this five-point time frame gradually forward from hour 34 to hour 535. Finally , I chose the time frame of  hour 320 to 486 since the other time frames are qualitatively the same.
+
+# Confronting model with empirical data
+
+Now I overlay the model predictions onto the IG predator, IG prey, and resource density at the equilibrium measured in empirical experiment. 
+
+## IG predator (*Blepharisma*)
+
+```{r, loading Type I model result, echo=FALSE}
+dat_mod_I = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/Type1.csv", sep=",", header=TRUE, fill=TRUE)
+dat_mod_I = dat_mod_I %>%
+  mutate(Res = (R1+R2) / (dat_mod_I[1,"R1"] + dat_mod_I[1,"R2"]),
+         Cons = C / (dat_mod_I[1,"C"]),
+         Pred = P / (dat_mod_I[1,"P"]))
+
+# Type I R2 for IG predator
+
+
+B_R2 = cbind(B_cal, subset(dat_mod_I, alpha %in% c(0, 0.2, 0.4, 0.6, 0.8, 1.0)))
+SST_pred = sum((B_R2[,"avg_trmt"] - mean(B_R2[,"avg_trmt"]))^2)
+SSR_I_pred = sum((B_R2[,"avg_trmt"] - B_R2[,"Pred"])^2)
+R2_I_pred = ifelse((1-(SSR_I_pred/SST_pred))>0, 1-(SSR_I_pred/SST_pred), 0)
+
+# Type I R2 for IG prey
+C_R2 = cbind(C_cal, subset(dat_mod_I, alpha %in% c(0, 0.2, 0.4, 0.6, 0.8, 1.0)))
+SST_prey = sum((C_R2[,"avg_trmt"] - mean(C_R2[,"avg_trmt"]))^2)
+SSR_I_prey = sum((C_R2[,"avg_trmt"] - C_R2[,"Cons"])^2)
+R2_I_prey = ifelse((1-(SSR_I_prey/SST_prey)) >0, (1-(SSR_I_prey/SST_prey)), 0)
+```
+
+```{r}
+B_R2 %>%
+  ggplot() +
+    geom_point(aes(x = alpha, y = avg_trmt), size = 2) +  
+    geom_errorbar(aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
+    geom_line(aes(x = alpha, y = Pred), size = 1.5, linetype = "dashed", color = "blue") + 
+    labs(x=expression(paste("Contact probability (", alpha, ")")),
+         y=expression(paste("IG predator density at the equilibrium \n(ratio to 0% contact probability)")),
+         caption=expression("Error bars represent standard error of the mean \nDashed line represents model results"))+ 
+    theme_bw() +
+    theme(panel.border=element_blank(), 
+          panel.grid.major=element_blank(), 
+          panel.grid.minor=element_blank(), 
+          plot.margin=unit(c(0, 0, 0, 0), "cm"),
+          legend.justification = c("right", "top"),
+          legend.margin=margin(0, 0, 0, 0, "cm"),
+          legend.key=element_rect(color="white", fill="white"), 
+          legend.title=element_text(size=13),
+          legend.text=element_text(size=13),
+          axis.line = element_line(colour = "black"), 
+          axis.text=element_text(size=14), 
+          axis.title.x=element_text(size=14, face="bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+          axis.title.y=element_text(size=14, face="bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
+          )
+```
+
+For the IG predator, the model with type I functional response explains 0% (R^2 is `r round(R2_I_pred, 4)`) of the empirical data. 
+
+## IG prey (*Colpidium*)
+
+```{r}
+C_R2 %>%
+  ggplot() +
+    geom_point(aes(x = alpha, y = avg_trmt), size = 2) +  
+    geom_errorbar(aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
+    geom_line(aes(x = alpha, y = Cons), size = 1.5, linetype = "dashed", color = "blue") + 
+    labs(x=expression(paste("Contact probability (", alpha, ")")),
+         y=expression(paste("IG predator density at the equilibrium \n(ratio to 0% contact probability)")),
+         caption=expression("Error bars represent standard error of the mean \nDashed line represents model results"))+ 
+    theme_bw() +
+    theme(panel.border=element_blank(), 
+          panel.grid.major=element_blank(), 
+          panel.grid.minor=element_blank(), 
+          plot.margin=unit(c(0, 0, 0, 0), "cm"),
+          legend.justification = c("right", "top"),
+          legend.margin=margin(0, 0, 0, 0, "cm"),
+          legend.key=element_rect(color="white", fill="white"), 
+          legend.title=element_text(size=13),
+          legend.text=element_text(size=13),
+          axis.line = element_line(colour = "black"), 
+          axis.text=element_text(size=14), 
+          axis.title.x=element_text(size=14, face="bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+          axis.title.y=element_text(size=14, face="bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
+          )
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
