@@ -16,7 +16,7 @@ output:
       toc_depth: 4
 ---
 
-```{r, include=FALSE, warning=FALSE, messssage=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 if (!require(ggplot2)) {
   install.packages("ggplot2")
   library(ggplot2)
@@ -38,8 +38,8 @@ if (!require(viridis)) {
 }else{library(viridis)}
 ```
 
-```{r, preping/cleaning data, echo=FALSE}
-dat <- read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_1.csv", sep = ",", header = TRUE, fill = TRUE)
+```{r, preping/cleaning data, echo=FALSE, warning=FALSE, message=FALSE}
+dat <- read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/data/IGP_II_20170419_1.csv", sep = ",", header = TRUE, fill = TRUE)
 dat[,2:ncol(dat)] <- dat[, 2:ncol(dat)] + 0.01
 
 dat_l <- dat %>% 
@@ -128,7 +128,7 @@ dat_cal <- rbind(B_cal, C_cal)
 ```
 
 ```{r, loading Bacteria data, echo=FALSE}
-Bac_raw = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/IGP_II_20170419_bac2.csv",
+Bac_raw = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/data/IGP_II_20170419_bac2.csv",
                      fill=TRUE, header=TRUE, sep=",")
 
 Bac = Bac_raw %>%
@@ -182,9 +182,10 @@ dat_cal <- rbind(dat_cal, Bac_cal)
 According to the model with only type I functional response, I predict that total animal density at the equilibrium ($Z_{tot}$) first increase and then decrease with intra-guild predation ($\alpha$; the proportion of IG prey that is available to the IG predator). Therefore I hypothesize that _resoure density_ at the equilibrium would first decrease and then increase with contact probability ($\alpha$=0). Note that I normalized the resource density at the equilibrium on the condition where contact probability ($\alpha$=0), so that it is comparable across model and experimental results. 
 
 ```{r, hypothsis from Type I model, echo=FALSE}
-tempDen_tot_H = read.table(file = "D:/Research/IGP_LabExp/Analysis/ProgressReport_20180212/m1_1_m2_150._C1_1_C2_70._TotZ.csv", header=F, fill=T, sep=",")
+tempDen_tot_H = read.table(file = "https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/data/m1_1_m2_150._C1_1_C2_70._TotZ.csv", 
+                           header=F, fill=T, sep=",")
 
-tempEigen = read.table(file = "D:/Research/IGP_LabExp/Analysis/ProgressReport_20180212/m1_1_m2_1.5_C1_1_C2_0.7_Eigenval1.csv", header=F, fill=T, sep=",")
+tempEigen = read.table(file = "https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/data/m1_1_m2_1.5_C1_1_C2_0.7_Eigenval1.csv", header=F, fill=T, sep=",")
 
 ModResults_Ztot_Hump = as.data.frame(matrix(0, nrow(tempDen_tot_H) * ncol(tempDen_tot_H), 4))
 ModResults_Ztot_Hump[,1] = rep(seq(0, 0.495, 0.005), nrow(tempDen_tot_H))
@@ -220,20 +221,20 @@ Ztot_Hump =
          y = expression(paste("Resource density at the equilibrium \n(ratio to 0% contact probability)"))
          ) +
     theme_bw() +
-    theme(panel.border=element_blank(), 
-          panel.grid.major=element_blank(), 
-          panel.grid.minor=element_blank(), 
-          plot.margin=unit(c(0, 0, 0, 0), "cm"),
+    theme(panel.border = element_blank(), 
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          plot.margin = unit(c(0, 0, 0, 0), "cm"),
           legend.position = c(0.95, 0.5),
           legend.justification = c("right", "top"),
-          legend.margin=margin(0, 0, 0, 0, "cm"),
-          legend.key=element_rect(color="white", fill="white"), 
-          legend.title=element_text(size=13),
-          legend.text=element_text(size=13),
+          legend.margin = margin(0, 0, 0, 0, "cm"),
+          legend.key = element_rect(color = "white", fill = "white"), 
+          legend.title = element_text(size = 13),
+          legend.text = element_text(size = 13),
           axis.line = element_line(colour = "black"), 
-          axis.text=element_text(size=14), 
-          axis.title.x=element_text(size=14, face="bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
-          axis.title.y=element_text(size=14, face="bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
+          axis.text = element_text(size=14), 
+          axis.title.x = element_text(size = 14, face = "bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+          axis.title.y = element_text(size = 14, face = "bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
           )
 Ztot_Hump
 ```
@@ -266,20 +267,19 @@ dat_sum %>%
        title = expression("Average density of IG predator ("* italic("Blespharisma")* ") across time"),
        caption = "error bars represent standard error of the mean") + 
   theme_bw() +
-  theme(panel.border=element_blank(), 
-        panel.grid.major=element_blank(), 
-        panel.grid.minor=element_blank(), 
-        plot.margin=unit(c(0, 0, 0, 0), "cm"),
-        #legend.position = c(0.95, 0.5),
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        plot.margin = unit(c(0, 0, 0, 0), "cm"),
         legend.justification = c("right", "top"),
-        legend.margin=margin(0, 0, 0, 0, "cm"),
-        legend.key=element_rect(color="white", fill="white"), 
-        legend.title=element_text(size=13),
-        legend.text=element_text(size=13),
+        legend.margin = margin(0, 0, 0, 0, "cm"),
+        legend.key = element_rect(color = "white", fill = "white"), 
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 13),
         axis.line = element_line(colour = "black"), 
-        axis.text=element_text(size=14), 
-        axis.title.x=element_text(size=14, face="bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
-        axis.title.y=element_text(size=14, face="bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
+        axis.text = element_text(size=14), 
+        axis.title.x = element_text(size = 14, face = "bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 14, face = "bold", margin=margin(t = 0, r = 0, b = 0, l = 18))
         )
 ```
 
@@ -327,7 +327,7 @@ Now I overlay the model predictions onto the IG predator, IG prey, and resource 
 ## Type I model
 
 ```{r, loading Type I model result, echo=FALSE}
-dat_mod_I = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/Type1.csv", sep=",", header=TRUE, fill=TRUE)
+dat_mod_I = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/data/Mod_Type1.csv", sep=",", header=TRUE, fill=TRUE)
 dat_mod_I = dat_mod_I %>%
   mutate(Res = (R1+R2) / (dat_mod_I[1,"R1"] + dat_mod_I[1,"R2"]),
          Cons = C / (dat_mod_I[1,"C"]),
@@ -354,11 +354,11 @@ R2_I_bac = ifelse((1-(SSR_I_bac/SST_I_bac)) > 0, (1-(SSR_I_bac/SST_I_bac)), 0)
 
 __IG predator (*Blepharisma*)__
 
-```{r}
+```{r, Pred vs Type I model, echo=FALSE}
 ggplot() +
   geom_point(data = B_I_R2, aes(x = alpha, y = avg_trmt), size = 2) +  
   geom_errorbar(data = B_I_R2, aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
-  geom_line(data = dat_mod_I, aes(x = alpha, y = Pred), size = 1.5, linetype = "dashed", color = "blue") + 
+  geom_line(data = dat_mod_I, aes(x = alpha, y = Pred), size = 1, color = "blue") + 
   labs(x=expression(paste("Contact probability (", alpha, ")")),
        y=expression(paste("IG predator density at the equilibrium \n(ratio to 0% contact probability)")),
        caption=expression("Error bars represent standard error of the mean \nDashed line represents model results"))+ 
@@ -378,11 +378,11 @@ theme(panel.border = element_blank(),
 For the IG predator, the model with type I functional response explains `r round(R2_I_pred, 4)*100`% of the empirical data. 
 __IG prey (*Colpidium*)__
 
-```{r}
+```{r, Pry vs Type I model, echo=FALSE}
 ggplot() +
   geom_point(data = C_I_R2, aes(x = alpha, y = avg_trmt), size = 2) +  
   geom_errorbar(data = C_I_R2, aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
-  geom_line(data = dat_mod_I, aes(x = alpha, y = Cons), size = 1.5, linetype = "dashed", color = "blue") + 
+  geom_line(data = dat_mod_I, aes(x = alpha, y = Cons), size = 1, color = "blue") + 
   labs(x=expression(paste("Contact probability (", alpha, ")")),
        y=expression(paste("IG prey density at the equilibrium \n(ratio to 0% contact probability)")),
        caption=expression("Error bars represent standard error of the mean \nDashed line represents model results"))+ 
@@ -403,11 +403,11 @@ For the IG prey, the model with type I functional response explains `r round(R2_
 
 __Bacteria (resource)__
 
-```{r}
+```{r, Bac vs Type I model, echo=FALSE}
 ggplot() +
   geom_point(data = Bac_I_R2, aes(x = alpha, y = avg_trmt), size = 2) +  
   geom_errorbar(data = Bac_I_R2, aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
-  geom_line(dat = dat_mod_I, aes(x = alpha, y = Res), size = 1.5, linetype = "dashed", color = "blue") + 
+  geom_line(dat = dat_mod_I, aes(x = alpha, y = Res), size = 1, color = "blue") + 
   labs(x=expression(paste("Contact probability (", alpha, ")")),
        y=expression(paste("Bacteria density at the equilibrium \n(ratio to 0% contact probability)")),
        caption=expression("Error bars represent standard error of the mean \nDashed line represents model results"))+ 
@@ -435,7 +435,7 @@ From the literature[@Laybourn1975; @Fenchel1980], I found that both IG predator 
 In addition, I did another independent experiment to estimate the attack rate and handling time for IG predator when consuming IG prey. 
 
 ```{r, Type2 functional response of IG predator, echo=FALSE}
-BC_Type2=read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/BonC_Type2_20171112.csv", sep=",",header=T,fill=T)
+BC_Type2=read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/data/BonC_Type2_20171112.csv", sep=",",header=T,fill=T)
 
 BC_nls = BC_Type2 %>% 
   group_by(Trmt, rep) %>%
@@ -449,21 +449,21 @@ BC_nls = BC_Type2 %>%
 Type2_mod = nls(Cons~(s2*InitRatio)/(1+(h2*s2*InitRatio)), start=list(s2=0.4, h2=0.34), data=BC_nls)
 
 BC_nls %>%
-  ggplot(aes(x=InitRatio)) +
-  geom_point(aes(y=Cons), size=3) + 
-  geom_line(aes(y=predict(Type2_mod)), linetype=2)+
-  labs(x="IG prey density per IG predator (ind./ml)", 
-       y=expression("Number of IG prey consumed (ind." %.% mL^-1 %.% day^-1))+ 
+  ggplot(aes(x = InitRatio)) +
+  geom_point(aes(y = Cons), size = 3) + 
+  geom_line(aes(y = predict(Type2_mod)), linetype = 2)+
+  labs(x = "IG prey density per IG predator (ind./ml)", 
+       y = expression("Number of IG prey consumed (ind./ " * mL%.%day * ")")
+       )+ 
   theme_bw() +
   theme(panel.border = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         plot.margin = unit(c(0, 0, 0, 0), "cm"),
-        plot.caption = element_text(size = 10, margin = margin(t = 12, r = 0, b = 0, l = 0)),
         axis.line = element_line(colour = "black"), 
         axis.text = element_text(size = 14), 
         axis.title.x = element_text(size = 14, face = "bold", margin = margin(t = 8, r = 0, b = 0, l = 0)),
-        axis.title.y = element_text(size = 14, face = "bold", margin = margin(t = 0, r = 0, b = 0, l = 18))
+        axis.title.y = element_text(size = 14, face = "bold", margin = margin(t = 0, r = 6, b = 12, l = 12))
         )
 ```
 
@@ -471,11 +471,11 @@ The attack rate and the handing time for IG predator when consuming IG prey are 
 
 However, I cannot find empirical parameter values for the assimilation efficienty of IG prey and the degree of resource partitioning. I search for a range of parameter space to find a combination of IG prey assimilation efficienty and degree of resource partitioning that renders the lowest residual sum of squared. 
 
-```{r}
+```{r, plot estimating parameters for Type II functional response, echo=FALSE}
 mod.lst <- expand.grid(e2 = seq(0, 0.5, 0.01), partition = seq(0, 0.15, 0.01))
 
 for (i in 1:nrow(mod.lst)){
-  tempdat <- read.table(file = paste0("D:/Research/IGP_LabExp/Analysis/Type2ModResults/Type2_e2_", mod.lst[i, "e2"]*10, "_p_", mod.lst[i,"partition"]*100, "..csv"), sep=",", header=FALSE)
+  tempdat <- read.table(file = paste0("https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/Type2ModResults/Type2_e2_", mod.lst[i, "e2"]*10, "_p_", mod.lst[i,"partition"]*100, "..csv"), sep=",", header=FALSE)
   colnames(tempdat) <- c("alpha", "P1", "P2", "C", "B")
 
   PredSSR <- cbind(B_cal, subset(tempdat, alpha %in% c(0, 0.2, 0.4, 0.6, 0.8, 1.0)))
@@ -503,13 +503,24 @@ mod.lst %>%
   geom_tile(color = "white", size = 0.1) +
   scale_fill_viridis() + 
   #coord_equal() + 
-  labs(x = "Assimilation efficiency of IG prey", y = "Degree of resource partitioning") +
-  theme(legend.title = element_text(size = 10),
-        legend.text = element_text(size = 12),
-        plot.title = element_text(size=16),
-        axis.title=element_text(size=14,face="bold"))+
-        #axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(fill = "Normalized total \nresidual sum of squared")
+  labs(x = "Assimilation efficiency of IG prey", 
+       y = "Degree of resource partitioning", 
+       fill = "Normalized total \nresidual sum of squared") +
+  theme_bw() +
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        plot.margin = unit(c(0, 0, 0, 0), "cm"),
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 13),
+        legend.justification = c("right", "center"),
+        legend.margin = margin(0, 0, 0, 0, "cm"),
+        legend.key = element_rect(color = "white", fill = "white"),
+        axis.line = element_line(colour = "black"), 
+        axis.text = element_text(size=14), 
+        axis.title.x = element_text(size = 14, face = "bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(size = 14, face = "bold", margin=margin(t = 0, r = 6, b = 0, l = 18))
+        )
 
 ```
 
@@ -517,8 +528,8 @@ From the above figure, the when the assimilation efficienty of IG prey is `r sub
 
 With these parameter values, I overlay the model prediction and data again. 
 
-```{r, loading Type I model result, echo=FALSE}
-dat_mod_II = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/Analysis/Type2ModResults/Type2_e2_4.5_p_5..csv", sep=",", header=FALSE, fill=TRUE)
+```{r, loading Type II model result, echo=FALSE}
+dat_mod_II = read.table(file="https://raw.githubusercontent.com/OscarFHC/IGP_LabExp/master/data/Mod_Type2_e2_4.5_p_5..csv", sep=",", header=FALSE, fill=TRUE)
 colnames(dat_mod_II) <- c("alpha", "R1", "R2", "Cons", "Pred")
 dat_mod_II = dat_mod_II %>%
   mutate(Res = (R1+R2) / (dat_mod_II[1,"R1"] + dat_mod_II[1,"R2"]),
@@ -544,10 +555,9 @@ SSR_II_bac = sum((Bac_II_R2[,"avg_trmt"] - Bac_II_R2[,"Res"])^2)
 R2_II_bac = ifelse((1-(SSR_II_bac/SST_II_bac)) > 0, (1-(SSR_II_bac/SST_II_bac)), 0)
 ```
 
-
 __IG predator (*Blepharisma*)__
 
-```{r}
+```{r, Pred vs Type II model, echo=FALSE}
 ggplot() +
   geom_point(data = B_II_R2, aes(x = alpha, y = avg_trmt), size = 2) +  
   geom_errorbar(data = B_II_R2, aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
@@ -571,7 +581,7 @@ ggplot() +
 For the IG predator, the model with type II functional response explains `r round(R2_II_pred, 4)*100`% of the empirical data. 
 __IG prey (*Colpidium*)__
 
-```{r}
+```{r, Prey vs Type II model, echo=FALSE}
 ggplot() +
   geom_point(data = C_II_R2, aes(x = alpha, y = avg_trmt), size = 2) +  
   geom_errorbar(data = C_II_R2, aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
@@ -596,7 +606,7 @@ For the IG prey, the model with type II functional response explains `r round(R2
 
 __Bacteria (resource)__
 
-```{r}
+```{r, Bac vs Type II model, echo=FALSE}
 ggplot() +
   geom_point(data = Bac_II_R2, aes(x = alpha, y = avg_trmt), size = 2) +  
   geom_errorbar(data = Bac_II_R2, aes(x = alpha, ymin = avg_trmt - se_permu, ymax = avg_trmt + se_permu), width = 0.1) + 
@@ -621,22 +631,19 @@ For the Bacteria, the model with type II functional response explains `r round(R
 
 # Explanation
 
-When contact probability is low ($\alpha$= 20%), only small proportion of IG prey is being consumed by IG predator. The main interaction between IG prey and IG predator is still competition, so bacteria consumption is not different from the treatment where IGP is not allowed to occur ($\alpha$= 0%). When contact probability gradually increases to 40-60%, the IG predator reached higher density but the IG prey is not being completely suppressed as the IG predator has not yet satiated by IG prey (the IG prey to IG predator ratio is `r round(((mean(C_sum_00[,"avg"])*C_plot[3, "avg_trmt"])*0.4)/(mean(B_sum_00[,"avg"])*B_plot[3, "avg_trmt"]), 4)` to `r round(((mean(C_sum_00[,"avg"])*C_plot[4, "avg_trmt"])*0.6)/(mean(B_sum_00[,"avg"])*B_plot[4, "avg_trmt"]), 4)`). With high IG predator density and intermediate IG prey density, bacteria density is being suppressed to lowest degree. When contact probability increase further higher to over 80%, IG predator is satiated by the IG prey (the IG prey to IG predator ratio is over `r round(((mean(C_sum_00[,"avg"])*C_plot[5, "avg_trmt"])*0.8)/(mean(B_sum_00[,"avg"])*B_plot[5, "avg_trmt"]), 4)`). The IG prey density therefore does not decrease further. The reduction of IG predator could be due to competition incurred by the IG prey. The lowest level of IG prey density and satiated IG predator result in highest resource density at the equilibrium.
+```{r, calculation predator prey density ratio, echo=FALSE}
+mean_den <- dat_sum %>%
+  filter(hr %in% c(320, 368, 414, 468, 486)) %>%
+  group_by(trmt_all) %>%
+  summarize(
+    Den_mean = mean(avg)
+  )
 
+PPratio_04 <- (mean_den[which(mean_den[["trmt_all"]] == "C04"),"Den_mean"] * 0.4) / 
+              mean_den[which(mean_den[["trmt_all"]] == "B04"),"Den_mean"]
 
+PPratio_08 <- (mean_den[which(mean_den[["trmt_all"]] == "C08"),"Den_mean"] * 0.8) / 
+              mean_den[which(mean_den[["trmt_all"]] == "B08"),"Den_mean"]
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+When contact probability is low ($\alpha$ = 20%), only small proportion of IG prey is being consumed by IG predator. The main interaction between IG prey and IG predator is still competition, so bacteria consumption is not different from the treatment where IGP is not allowed to occur ($\alpha$= 0%). When contact probability gradually increases to 40-60%, the IG predator reached higher density but the IG prey is not being completely suppressed as the IG predator is about to be satiated by IG prey when $\alpha$ reaches 40% (the IG prey to IG predator ratio is `r round(PPratio_04, 4)` and the half saturation density of IG prey is `r round(1/(summary(Type2_mod)$coefficients[2,1]*summary(Type2_mod)$coefficients[1,1]), 4)`). Under this treatment, bacteria density is being suppressed to lowest level by high IG predator density and intermediate IG prey density. When contact probability increase further higher to over 80%, IG predator is satiated by the IG prey (the IG prey to IG predator ratio is over `r round(PPratio_08, 4)`). The IG prey density therefore does not decrease further. The reduction of IG predator could be due to competition incurred by the IG prey. The lowest level of IG prey density and satiated IG predator result in highest resource density at the equilibrium.
