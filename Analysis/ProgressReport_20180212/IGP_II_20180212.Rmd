@@ -521,7 +521,6 @@ mod.lst %>%
         axis.title.x = element_text(size = 14, face = "bold", margin=margin(t = 8, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(size = 14, face = "bold", margin=margin(t = 0, r = 6, b = 0, l = 18))
         )
-
 ```
 
 From the above figure, the when the assimilation efficienty of IG prey is `r subset(mod.lst, RSS_tot == min(mod.lst[,"RSS_tot"]))[["e2"]]` and the degree of resource partitioning is `r subset(mod.lst, RSS_tot == min(mod.lst[,"RSS_tot"]))[["partition"]]`, the model explain the highest variation of the data. 
